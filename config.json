@@ -1,18 +1,19 @@
-[
-    {
-        "binary": "gaiad",
-        "granter": "cosmos1...kurw791",
-        "grantee": "your_grantee_address1",
-        "chainId": "cosmoshub-1",
-        "node": "https://rpc.cosmoshub1.com:443",
-        "feepayer": "fee_payer_address1"
+{
+    "cronJobTime": "0 22 1 * *", // Cron time. It runs every month 1st at 9pm
+    "db": {
+        "driver": "mysql",
+        "table": "income",
+        "sqlUrl": "username:password@tcp(database-server:port)/database-name"
     },
-    {
-        "binary": "osmosisd",
-        "granter": "osmo1...abcd123",
-        "grantee": "your_grantee_address2",
-        "chainId": "osmosis-1",
-        "node": "https://rpc.osmosis.com:443",
-        "feepayer": "fee_payer_address_osmo"
-    }
-]
+    "networks": [
+        {
+            "binary": "gaiad",
+            "granter": "cosmos1...abcd12",
+            "grantee": "cosmos1....daf223",
+            "chainId": "cosmoshub-4",
+            "node": "https://rpc.cosmoshub2.forbole.com:443",
+            "feepayer": ""
+        }
+        // ... Add other network configurations ...
+    ]
+}

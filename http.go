@@ -8,10 +8,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func startHTTPServer(db *sql.DB, configFileName string) {
+func startHTTPServer(db *sql.DB, config Configuration) {
 	router := mux.NewRouter()
 	router.HandleFunc("/income", func(w http.ResponseWriter, r *http.Request) {
-		incomeData, err := getIncomeData(db)
+		incomeData, err := getIncomeData(db, config.DB.Table)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

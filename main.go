@@ -10,15 +10,12 @@ import (
 
 // NetworkConfig represents the configuration for each network
 type NetworkConfig struct {
-	Binary    string `json:"binary"`
-	Granter   string `json:"granter"`
-	Grantee   string `json:"grantee"`
-	ChainID   string `json:"chainId"`
-	Node      string `json:"node"`
-	FeePayer  string `json:"feepayer"`
-	SQLTable  string `json:"sqlTable"`
-	SQLDriver string `json:"sqlDriver"`
-	SQLURL    string `json:"sqlURL"`
+	Binary   string `json:"binary"`
+	Granter  string `json:"granter"`
+	Grantee  string `json:"grantee"`
+	ChainID  string `json:"chainId"`
+	Node     string `json:"node"`
+	FeePayer string `json:"feepayer"`
 }
 
 // IncomeData represents income details
@@ -31,22 +28,54 @@ type IncomeData struct {
 	Date       time.Time `json:"date"`
 }
 
-func main() {
-	configFileName := "config.json"
-	db := connectToDatabase("username:password@tcp(database-server:port)/database-name")
-	startHTTPServer(db, configFileName)
-	// Schedule the rewards withdrawal to run every month on the 1st at 9 PM
-	cronSchedule := "0 21 1 * *"
-	startRewardsWithdrawalCron(db, configFileName, cronSchedule)
+// Configuration represents the structure of the config.json file
+type Configuration struct {
+	CronJobTime string `json:"cronJobTime"`
+	DB          struct {
+		Driver string `json:"driver"`
+		Table  string `json:"table"`
+		SQLURL string `json:"sqlUrl"`
+	} `json:"db"`
+	Networks []NetworkConfig `json:"networks"`
 }
 
-func startRewardsWithdrawalCron(db *sql.DB, configFileName, cronSchedule string) {
+func main() {
+	configFileName := "config.json"
+
+	var config Configuration
+	if err := readJSONConfig(configFileName, &config); err != nil {
+		fmt.Println("Error reading config:", err)
+		return
+	}
+
+	// Extract database details from the config structure
+	dbURL := config.DB.SQLURL
+	dbDriver := config.DB.Driver
+	dbTable := config.DB.Table
+
+	// Connect to the database using the extracted details
+	db := connectToDatabase(dbURL, dbDriver)
+
+	// Create the 'income' table if it doesn't exist
+	if err := createIncomeTableIfNotExists(db, dbTable); err != nil {
+		fmt.Println("Error creating income table:", err)
+		return
+	}
+
+	// Schedule rewards withdrawal based on the cronJobTime
+	startRewardsWithdrawalCron(db, dbTable, config, config.CronJobTime)
+
+	// Run the HTTP server or other main program logic
+	startHTTPServer(db, config)
+}
+
+func startRewardsWithdrawalCron(db *sql.DB, dbTable string, config, cronSchedule string) {
 	// Create a new cron job
 	c := cron.New()
 
 	// Add a scheduled task to run the rewards withdrawal
 	c.AddFunc(cronSchedule, func() {
-		networkConfigs, err := ReadConfig(configFileName)
+		networkConfigs, err := config.Networks
 		if err != nil {
 			fmt.Println("Error reading config:", err)
 			return
