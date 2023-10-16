@@ -1,0 +1,18 @@
+[
+    {
+        "binary": "gaiad",
+        "granter": "cosmos1...kurw791",
+        "grantee": "your_grantee_address1",
+        "chainId": "cosmoshub-1",
+        "node": "https://rpc.cosmoshub1.com:443",
+        "feepayer": "fee_payer_address1"
+    },
+    {
+        "binary": "osmosisd",
+        "granter": "osmo1...abcd123",
+        "grantee": "your_grantee_address2",
+        "chainId": "osmosis-1",
+        "node": "https://rpc.osmosis.com:443",
+        "feepayer": "fee_payer_address_osmo"
+    }
+]
