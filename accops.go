@@ -10,7 +10,7 @@ import (
 
 type Balance struct {
 	Denom  string `json:"denom"`
-	Amount string `json:"amount"`
+	Amount uint64 `json:"amount"`
 }
 
 func queryBalance(binary, account, node string) ([]Balance, error) {
@@ -29,14 +29,27 @@ func queryBalance(binary, account, node string) ([]Balance, error) {
 	return balances, nil
 }
 
-func calculateIncome(newBalance, oldBalance string) string {
-	// Parse the balances as floats
-	newBalanceFloat := parseBalanceToFloat(newBalance)
-	oldBalanceFloat := parseBalanceToFloat(oldBalance)
+// Calculate income based on slices of new and old balances
+func calculateIncome(newBalances, oldBalances []Balance) []Balance {
+	var incomes []Balance
 
-	// Calculate income
-	incomeFloat := newBalanceFloat - oldBalanceFloat
-	return fmt.Sprintf("%.6f", incomeFloat)
+	// Ensure that both slices have the same length
+	if len(newBalances) != len(oldBalances) {
+		fmt.Println("Error: Mismatched lengths of newBalances and oldBalances slices")
+		return incomes
+	}
+
+	// Calculate income for each pair of balances
+	for i := 0; i < len(newBalances); i++ {
+		// Calculate income as the difference between new balance and old balance
+		income := Balance{
+			Denom:  newBalances[i].Denom,
+			Amount: newBalances[i].Amount - oldBalances[i].Amount,
+		}
+		incomes = append(incomes, income)
+	}
+
+	return incomes
 }
 
 func parseBalanceToFloat(balance string) float64 {

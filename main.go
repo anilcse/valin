@@ -2,7 +2,9 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/robfig/cron" // Import the cron library
@@ -57,7 +59,7 @@ func main() {
 	db := connectToDatabase(dbURL, dbDriver)
 
 	// Create the 'income' table if it doesn't exist
-	if err := createIncomeTableIfNotExists(db, dbTable); err != nil {
+	if err := createTableIfNotExists(db, dbTable); err != nil {
 		fmt.Println("Error creating income table:", err)
 		return
 	}
@@ -69,17 +71,28 @@ func main() {
 	startHTTPServer(db, config)
 }
 
-func startRewardsWithdrawalCron(db *sql.DB, dbTable string, config, cronSchedule string) {
+func readJSONConfig(filename string, config interface{}) error {
+	configFile, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer configFile.Close()
+
+	decoder := json.NewDecoder(configFile)
+	if err := decoder.Decode(config); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func startRewardsWithdrawalCron(db *sql.DB, dbTable string, config Configuration, cronSchedule string) {
 	// Create a new cron job
 	c := cron.New()
 
 	// Add a scheduled task to run the rewards withdrawal
 	c.AddFunc(cronSchedule, func() {
-		networkConfigs, err := config.Networks
-		if err != nil {
-			fmt.Println("Error reading config:", err)
-			return
-		}
+		networkConfigs := config.Networks
 
 		for _, network := range networkConfigs {
 			fmt.Printf("Processing network: %s\n", network.ChainID)
@@ -90,7 +103,7 @@ func startRewardsWithdrawalCron(db *sql.DB, dbTable string, config, cronSchedule
 				fmt.Printf("Error querying initial balance: %v\n", err)
 				continue
 			}
-			fmt.Printf("Initial Balance: %s\n", initialBalance)
+			fmt.Printf("Initial Balance: %v\n", initialBalance)
 
 			// Withdraw rewards and execute on the network
 			withdrawRewards(network.Binary, network.Granter, network.ChainID, network.Node, network.FeePayer, network.Grantee)
@@ -101,14 +114,14 @@ func startRewardsWithdrawalCron(db *sql.DB, dbTable string, config, cronSchedule
 				fmt.Printf("Error querying new balance: %v\n", err)
 				continue
 			}
-			fmt.Printf("New Balance: %s\n", newBalance)
+			fmt.Printf("New Balance: %v\n", newBalance)
 
 			// Calculate income (new balance - initial balance)
 			income := calculateIncome(newBalance, initialBalance)
-			fmt.Printf("Income: %s\n", income)
+			fmt.Printf("Income: %v\n", income)
 
 			// Insert income details into 'income' table
-			insertIncomeDetails(db, network.ChainID, network.Granter, initialBalance, income, newBalance)
+			insertIncomeDetails(db, dbTable, network.ChainID, network.Granter, initialBalance, income, newBalance)
 		}
 	})
 

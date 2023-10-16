@@ -1,5 +1,5 @@
 {
-    "cronJobTime": "0 22 1 * *", // Cron time. It runs every month 1st at 9pm
+    "cronJobTime": "0 22 1 * *",
     "db": {
         "driver": "mysql",
         "table": "income",
@@ -14,6 +14,5 @@
             "node": "https://rpc.cosmoshub2.forbole.com:443",
             "feepayer": ""
         }
-        // ... Add other network configurations ...
     ]
 }
