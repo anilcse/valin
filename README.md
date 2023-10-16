@@ -1,0 +1,2 @@
+# valin
+Validator income
