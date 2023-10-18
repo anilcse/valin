@@ -16,12 +16,13 @@ import (
 
 // NetworkConfig represents the configuration for each network
 type NetworkConfig struct {
-	Binary   string `json:"binary"`
-	Granter  string `json:"granter"`
-	Grantee  string `json:"grantee"`
-	ChainID  string `json:"chainId"`
-	Node     string `json:"node"`
-	FeePayer string `json:"feepayer"`
+	Binary    string `json:"binary"`
+	Granter   string `json:"granter"`
+	Grantee   string `json:"grantee"`
+	ChainID   string `json:"chainId"`
+	Node      string `json:"node"`
+	FeePayer  string `json:"feepayer"`
+	Validator string `json:"validator"`
 }
 
 // IncomeData represents income details

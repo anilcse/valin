@@ -12,7 +12,8 @@
             "grantee": "cosmos1....daf223",
             "chainId": "cosmoshub-4",
             "node": "https://rpc.cosmoshub2.forbole.com:443",
-            "feepayer": ""
+            "feepayer": "",
+            "validator": ""
         }
     ]
 }
