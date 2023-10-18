@@ -59,6 +59,7 @@ func parseBalanceToFloat(balance string) float64 {
 
 // Withdraw rewards and execute the transaction
 func withdrawRewards(binary, granter, chainID, node, feePayer, grantee string) {
+
 	cmd := exec.Command(binary, "tx", "distribution", "withdraw-rewards", granter, "--from", granter, "--chain-id", chainID, "-y", "--generate-only")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -73,4 +74,29 @@ func withdrawRewards(binary, granter, chainID, node, feePayer, grantee string) {
 	if err != nil {
 		fmt.Printf("Error executing transaction: %v\n", err)
 	}
+
+	// TODO Replace the above with this logic.
+	// //	Now that we know our key name, we can set it in our chain config
+	// chainConfig_1.Key = "source_key"
+
+	// // TODO build authz message to withdraw commission using granter, grantee, feepayer and validator address
+	// //	Build transaction message
+	// req := []sdk.Msg{
+	// 	{
+	// 		&distrtypes.MsgWithdrawValidatorCommission{
+	// 			FromAddress: srcWalletAddress,
+	// 			Validator:   destination_wallet,
+	// 		},
+	// 	},
+	// }
+
+	// // Send message and get response
+	// res, err := chainClient.SendMsgs(context.Background(), req)
+	// if err != nil {
+	// 	if res != nil {
+	// 		log.Fatalf("failed to send coins: code(%d) msg(%s)", res.Code, res.Logs)
+	// 	}
+	// 	log.Fatalf("Failed to send coins.Err: %v", err)
+	// }
+	// fmt.Println(chainClient.PrintTxResponse(res))
 }

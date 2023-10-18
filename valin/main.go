@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -11,8 +10,6 @@ import (
 
 	"github.com/robfig/cron" // Import the cron library
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	lens "github.com/strangelove-ventures/lens/client"
 	registry "github.com/strangelove-ventures/lens/client/chain_registry"
 )
@@ -140,6 +137,10 @@ func startRewardsWithdrawalCron(db *sql.DB, dbTable string, config Configuration
 }
 
 func initChains() {
+	// TODO: loop through all chains and update the below constats from chain config
+	// TODO: create chainclients array, store client for each chain in the array.
+	// We should use this chain-specific client while executing transactions and queries
+
 	//	Fetches chain info from chain registry
 	chainInfo, err := registry.DefaultChainRegistry().GetChain(chainRegName)
 	if err != nil {
@@ -180,35 +181,10 @@ func initChains() {
 		log.Fatalf("Failed to build new chain client for %s. Err: %v \n", chainInfo.ChainID, err)
 	}
 
+	// TODO: check if key exists, if doesn't, restore
 	// Lets restore a key with funds and name it "source_key", this is the wallet we'll use to send tx.
 	srcWalletAddress, err := chainClient.RestoreKey("source_key", srcWalletMnemonic)
 	if err != nil {
 		log.Fatalf("Failed to restore key. Err: %v \n", err)
 	}
-
-	//	Now that we know our key name, we can set it in our chain config
-	chainConfig_1.Key = "source_key"
-
-	// Sanitize coin amount and make it readable by SDK
-	coins, err := sdk.ParseCoinNormalized(amount_to_send)
-	if err != nil {
-		log.Fatalf("Error parsing coin string. Error: %s", err)
-	}
-
-	//	Build transaction message
-	req := &banktypes.MsgSend{
-		FromAddress: srcWalletAddress,
-		ToAddress:   destination_wallet,
-		Amount:      sdk.Coins{coins},
-	}
-
-	// Send message and get response
-	res, err := chainClient.SendMsg(context.Background(), req)
-	if err != nil {
-		if res != nil {
-			log.Fatalf("failed to send coins: code(%d) msg(%s)", res.Code, res.Logs)
-		}
-		log.Fatalf("Failed to send coins.Err: %v", err)
-	}
-	fmt.Println(chainClient.PrintTxResponse(res))
 }
