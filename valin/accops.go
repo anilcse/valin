@@ -2,12 +2,11 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"os/exec"
 	"strconv"
-	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authztypes "github.com/cosmos/cosmos-sdk/x/authz"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 )
 
 func queryBalance(network NetworkConfig) (sdk.Coins, error) {
@@ -21,11 +20,11 @@ func queryBalance(network NetworkConfig) (sdk.Coins, error) {
 func calculateIncome(newBalances, oldBalances sdk.Coins) sdk.Coins {
 	var incomes sdk.Coins
 
-	// Ensure that both slices have the same length
-	if len(newBalances) != len(oldBalances) {
-		fmt.Println("Error: Mismatched lengths of newBalances and oldBalances slices")
-		return incomes
-	}
+	// // Ensure that both slices have the same length
+	// if len(newBalances) != len(oldBalances) {
+	// 	fmt.Println("Error: Mismatched lengths of newBalances and oldBalances slices")
+	// 	return incomes
+	// }
 
 	// Calculate income for each pair of balances
 	for i := 0; i < len(newBalances); i++ {
@@ -45,46 +44,43 @@ func parseBalanceToFloat(balance string) float64 {
 	return balanceFloat
 }
 
-// Withdraw rewards and execute the transaction
-func withdrawRewards(binary, granter, chainID, node, feePayer, grantee string) {
+// Withdraw rewards and commission
+// via authz
+func withdrawRewardsAndCommission(network NetworkConfig) (*sdk.TxResponse, error) {
+	chainClient := ChainClients[network.ChainID]
 
-	cmd := exec.Command(binary, "tx", "distribution", "withdraw-rewards", granter, "--from", granter, "--chain-id", chainID, "-y", "--generate-only")
-	output, err := cmd.CombinedOutput()
+	//	Build transaction message
+	delAddr, err := sdk.AccAddressFromBech32(network.Granter)
 	if err != nil {
-		fmt.Printf("Error generating withdraw-rewards transaction: %v\n", err)
-		return
+		return nil, err
+	}
+	valAddr, err := sdk.ValAddressFromBech32(network.Validator)
+	if err != nil {
+		return nil, err
+	}
+	grantee, err := sdk.AccAddressFromBech32(network.Grantee)
+	if err != nil {
+		return nil, err
 	}
 
-	// Execute the transaction using authz module
-	cmd = exec.Command(binary, "tx", "authz", "exec", "-", "--chain-id", chainID, "--node", node, "--fees", "200uatom", "--fee-account", feePayer, "--from", grantee, "-y")
-	cmd.Stdin = strings.NewReader(string(output))
-	_, err = cmd.CombinedOutput()
-	if err != nil {
-		fmt.Printf("Error executing transaction: %v\n", err)
-	}
-
-	// TODO Replace the above with this logic.
-	// //	Now that we know our key name, we can set it in our chain config
-	// chainConfig_1.Key = "source_key"
-
-	// // TODO build authz message to withdraw commission using granter, grantee, feepayer and validator address
-	// //	Build transaction message
-	// req := []sdk.Msg{
-	// 	{
-	// 		&distrtypes.MsgWithdrawValidatorCommission{
-	// 			FromAddress: srcWalletAddress,
-	// 			Validator:   destination_wallet,
-	// 		},
-	// 	},
-	// }
-
-	// // Send message and get response
-	// res, err := chainClient.SendMsgs(context.Background(), req)
+	// TODO
+	// feepayer, err := sdk.AccAddressFromBech32(network.FeePayer)
 	// if err != nil {
-	// 	if res != nil {
-	// 		log.Fatalf("failed to send coins: code(%d) msg(%s)", res.Code, res.Logs)
-	// 	}
-	// 	log.Fatalf("Failed to send coins.Err: %v", err)
+	// 	return err
 	// }
-	// fmt.Println(chainClient.PrintTxResponse(res))
+
+	withdrwaDelegationMsg := distrtypes.NewMsgWithdrawDelegatorReward(delAddr, valAddr)
+	withdrwaCommissionMsg := distrtypes.NewMsgWithdrawValidatorCommission(valAddr)
+	msgs := []sdk.Msg{
+		withdrwaDelegationMsg,
+		withdrwaCommissionMsg,
+	}
+
+	authzMsg := authztypes.NewMsgExec(grantee, msgs)
+	if err := authzMsg.ValidateBasic(); err != nil {
+		return nil, err
+	}
+
+	// Send message and get response
+	return chainClient.SendMsgs(context.Background(), msgs)
 }

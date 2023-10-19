@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 	"regexp"
@@ -20,51 +18,57 @@ import (
 var config Configuration
 var zapLog *zap.Logger
 
+var ChainClients map[string]*lens.ChainClient
+
 func main() {
 	configFileName := "config.json"
 
-	if err := readJSONConfig(configFileName, &config); err != nil {
-		fmt.Println("Error reading config:", err)
+	var err error
+	zapConfig := zap.NewProductionConfig()
+	enccoderConfig := zap.NewProductionEncoderConfig()
+	zapcore.TimeEncoderOfLayout("Jan _2 15:04:05.000000000")
+	enccoderConfig.StacktraceKey = "" // to hide stacktrace info
+	zapConfig.EncoderConfig = enccoderConfig
+
+	zapLog, err = zapConfig.Build(zap.AddCallerSkip(1))
+
+	if err != nil {
+		panic(err)
+	}
+
+	config, err = ReadConfig(configFileName)
+	if err != nil {
+		zapLog.Error(err.Error())
 		return
 	}
+
+	ChainClients = make(map[string]*lens.ChainClient, len(config.Networks))
 
 	// Extract database details from the config structure
-	dbURL := config.DB.SQLURL
-	dbDriver := config.DB.Driver
-	dbTable := config.DB.Table
+	// dbURL := config.DB.SQLURL
+	// dbDriver := config.DB.Driver
+	// dbTable := config.DB.Table
 
-	// Connect to the database using the extracted details
-	db := connectToDatabase(dbURL, dbDriver)
+	// // Connect to the database using the extracted details
+	// db := connectToDatabase(dbURL, dbDriver)
 
-	// Create the 'income' table if it doesn't exist
-	if err := createTableIfNotExists(db, dbTable); err != nil {
-		fmt.Println("Error creating income table:", err)
-		return
-	}
+	// // Create the 'income' table if it doesn't exist
+	// if err := createTableIfNotExists(db, dbTable); err != nil {
+	// 	fmt.Println("Error creating income table:", err)
+	// 	return
+	// }
 
 	// initChains
 	initChains()
 
-	// Schedule rewards withdrawal based on the cronJobTime
-	startRewardsWithdrawalCron(db, dbTable, config, config.CronJobTime)
+	WithdrawRewardsAndStore()
 
-	// Run the HTTP server or other main program logic
-	startHTTPServer(db, config)
-}
+	// TODO
+	// // Schedule rewards withdrawal based on the cronJobTime
+	// startRewardsWithdrawalCron(db, dbTable, config, config.CronJobTime)
 
-func readJSONConfig(filename string, config interface{}) error {
-	configFile, err := os.Open(filename)
-	if err != nil {
-		return err
-	}
-	defer configFile.Close()
-
-	decoder := json.NewDecoder(configFile)
-	if err := decoder.Decode(config); err != nil {
-		return err
-	}
-
-	return nil
+	// // Run the HTTP server or other main program logic
+	// startHTTPServer(db, config)
 }
 
 func startRewardsWithdrawalCron(db *sql.DB, dbTable string, config Configuration, cronSchedule string) {
@@ -73,37 +77,7 @@ func startRewardsWithdrawalCron(db *sql.DB, dbTable string, config Configuration
 
 	// Add a scheduled task to run the rewards withdrawal
 	c.AddFunc(cronSchedule, func() {
-		networkConfigs := config.Networks
-
-		for _, network := range networkConfigs {
-			fmt.Printf("Processing network: %s\n", network.ChainName)
-
-			// Query the initial balance
-			initialBalance, err := queryBalance(network)
-			if err != nil {
-				fmt.Printf("Error querying initial balance: %v\n", err)
-				continue
-			}
-			fmt.Printf("Initial Balance: %v\n", initialBalance)
-
-			// Withdraw rewards and execute on the network
-			withdrawRewards(network.Binary, network.Granter, network.ChainID, network.Node, network.FeePayer, network.Grantee)
-
-			// Query the new balance
-			newBalance, err := queryBalance(network)
-			if err != nil {
-				fmt.Printf("Error querying new balance: %v\n", err)
-				continue
-			}
-			fmt.Printf("New Balance: %v\n", newBalance)
-
-			// Calculate income (new balance - initial balance)
-			income := calculateIncome(newBalance, initialBalance)
-			fmt.Printf("Income: %v\n", income)
-
-			// Insert income details into 'income' table
-			insertIncomeDetails(db, dbTable, network.ChainID, network.Granter, initialBalance, income, newBalance)
-		}
+		WithdrawRewardsAndStore()
 	})
 
 	// Start the cron job
@@ -116,19 +90,6 @@ func startRewardsWithdrawalCron(db *sql.DB, dbTable string, config Configuration
 func initChains() {
 	// We should use this chain-specific client while executing transactions and queries
 	networkConfigs := config.Networks
-	var granteeKeyMnemonic string
-
-	var err error
-	config := zap.NewProductionConfig()
-	enccoderConfig := zap.NewProductionEncoderConfig()
-	zapcore.TimeEncoderOfLayout("Jan _2 15:04:05.000000000")
-	enccoderConfig.StacktraceKey = "" // to hide stacktrace info
-	config.EncoderConfig = enccoderConfig
-
-	zapLog, err = config.Build(zap.AddCallerSkip(1))
-	if err != nil {
-		panic(err)
-	}
 
 	for _, network := range networkConfigs {
 		//	Fetches chain info from chain registry
@@ -178,9 +139,12 @@ func initChains() {
 
 		// TODO: check if key exists, if doesn't, restore
 		// Lets restore a key with funds and name it "source_key", this is the wallet we'll use to send tx.
-		_, err = chainClient.RestoreKey(chainInfo.ChainID, granteeKeyMnemonic, uint32(chainInfo.Slip44))
-		if err != nil {
-			log.Fatalf("Failed to restore key. Err: %v \n", err)
+
+		if _, err := chainClient.GetKeyAddress(); err != nil {
+			_, err = chainClient.RestoreKey(keyname, config.Mnemonic, uint32(chainInfo.Slip44))
+			if err != nil {
+				log.Fatalf("\n \n Failed to restore key. Err: %v %v \n", err, config)
+			}
 		}
 
 		ChainClients[chainInfo.ChainID] = chainClient

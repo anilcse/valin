@@ -2,13 +2,10 @@ package main
 
 import (
 	"time"
-
-	lens "github.com/strangelove-ventures/lens/client"
 )
 
 // NetworkConfig represents the configuration for each network
 type NetworkConfig struct {
-	Binary    string `json:"binary"`
 	Granter   string `json:"granter"`
 	Grantee   string `json:"grantee"`
 	ChainName string `json:"chain_name"`
@@ -39,5 +36,3 @@ type Configuration struct {
 	} `json:"db"`
 	Networks []NetworkConfig `json:"networks"`
 }
-
-var ChainClients map[string]*lens.ChainClient

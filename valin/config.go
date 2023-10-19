@@ -6,18 +6,17 @@ import (
 )
 
 // ReadConfig reads configuration from a JSON file
-func ReadConfig(filename string) ([]NetworkConfig, error) {
+func ReadConfig(filename string) (Configuration, error) {
+	var conf Configuration
 	configFile, err := os.Open(filename)
 	if err != nil {
-		return nil, err
+		return conf, err
 	}
 	defer configFile.Close()
-
-	var networkConfigs []NetworkConfig
 	decoder := json.NewDecoder(configFile)
-	if err := decoder.Decode(&networkConfigs); err != nil {
-		return nil, err
+	if err := decoder.Decode(&conf); err != nil {
+		return conf, err
 	}
 
-	return networkConfigs, nil
+	return conf, nil
 }
