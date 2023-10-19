@@ -49,6 +49,7 @@ func WithdrawRewardsAndStore() {
 			fmt.Printf("Error Withdraw Rewards: %v\n", err)
 			continue
 		}
+
 		fmt.Printf("Withdraw Rewards successful: %v\n", res)
 
 		// Query the new balance

@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"strconv"
+	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authztypes "github.com/cosmos/cosmos-sdk/x/authz"
@@ -39,16 +39,15 @@ func calculateIncome(newBalances, oldBalances sdk.Coins) sdk.Coins {
 	return incomes
 }
 
-func parseBalanceToFloat(balance string) float64 {
-	balanceFloat, _ := strconv.ParseFloat(balance, 64)
-	return balanceFloat
-}
-
 // Withdraw rewards and commission
 // via authz
 func withdrawRewardsAndCommission(network NetworkConfig) (*sdk.TxResponse, error) {
 	chainClient := ChainClients[network.ChainID]
 
+	sdk.GetConfig().SetBech32PrefixForAccount(chainClient.Config.AccountPrefix, chainClient.Config.AccountPrefix)
+	sdk.GetConfig().SetBech32PrefixForValidator(chainClient.Config.AccountPrefix+"valoper", chainClient.Config.AccountPrefix+"valoperpub")
+
+	fmt.Println("inside withdraw", chainClient.Config.AccountPrefix)
 	//	Build transaction message
 	delAddr, err := sdk.AccAddressFromBech32(network.Granter)
 	if err != nil {
@@ -68,6 +67,8 @@ func withdrawRewardsAndCommission(network NetworkConfig) (*sdk.TxResponse, error
 	// if err != nil {
 	// 	return err
 	// }
+
+	fmt.Printf("address: %s %s %s\n\n", delAddr, valAddr, grantee)
 
 	withdrwaDelegationMsg := distrtypes.NewMsgWithdrawDelegatorReward(delAddr, valAddr)
 	withdrwaCommissionMsg := distrtypes.NewMsgWithdrawValidatorCommission(valAddr)
