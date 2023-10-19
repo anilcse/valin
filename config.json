@@ -8,10 +8,10 @@
     "mnemonic": "",
     "networks": [
         {
-            "binary": "gaiad",
             "granter": "cosmos1...abcd12",
             "grantee": "cosmos1....daf223",
-            "chainId": "cosmoshub-4",
+            "chain_id": "cosmoshub-4",
+            "chain_name": "",
             "node": "https://rpc.cosmoshub2.forbole.com:443",
             "feepayer": "",
             "validator": ""
