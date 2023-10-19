@@ -35,7 +35,7 @@ func createTableIfNotExists(db *sql.DB, tableName string) error {
 	return nil
 }
 
-func insertIncomeDetails(db *sql.DB, dbTable, chainID, granter string, oldBalance, income, newBalance []Balance) error {
+func insertIncomeDetails(db *sql.DB, dbTable, chainID, granter string, oldBalance, income, newBalance sdk.Coins) error {
 	insertStatement := fmt.Sprintf(`
         INSERT INTO income (chain_id, granter, old_balance, income, new_balance, date)
         VALUES (?, ?, ?, ?, ?, NOW())`, dbTable)

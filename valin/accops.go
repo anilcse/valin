@@ -1,37 +1,25 @@
 package main
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-type Balance struct {
-	Denom  string `json:"denom"`
-	Amount uint64 `json:"amount"`
-}
+func queryBalance(network NetworkConfig) (sdk.Coins, error) {
+	chainClient := ChainClients[network.ChainID]
+	balance, err := chainClient.QueryBalanceWithAddress(context.Background(), network.Granter)
 
-func queryBalance(binary, account, node string) ([]Balance, error) {
-	cmd := exec.Command(binary, "q", "bank", "balances", account, "--node", node)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return nil, err
-	}
-
-	var result map[string][]Balance
-	if err := json.Unmarshal(output, &result); err != nil {
-		return nil, err
-	}
-
-	balances := result["balances"]
-	return balances, nil
+	return balance, err
 }
 
 // Calculate income based on slices of new and old balances
-func calculateIncome(newBalances, oldBalances []Balance) []Balance {
-	var incomes []Balance
+func calculateIncome(newBalances, oldBalances sdk.Coins) sdk.Coins {
+	var incomes sdk.Coins
 
 	// Ensure that both slices have the same length
 	if len(newBalances) != len(oldBalances) {
@@ -42,9 +30,9 @@ func calculateIncome(newBalances, oldBalances []Balance) []Balance {
 	// Calculate income for each pair of balances
 	for i := 0; i < len(newBalances); i++ {
 		// Calculate income as the difference between new balance and old balance
-		income := Balance{
+		income := sdk.Coin{
 			Denom:  newBalances[i].Denom,
-			Amount: newBalances[i].Amount - oldBalances[i].Amount,
+			Amount: newBalances[i].Amount.Sub(oldBalances[i].Amount),
 		}
 		incomes = append(incomes, income)
 	}

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"time"
+	"regexp"
 
 	"github.com/robfig/cron" // Import the cron library
 
@@ -14,42 +14,11 @@ import (
 	registry "github.com/strangelove-ventures/lens/client/chain_registry"
 )
 
-// NetworkConfig represents the configuration for each network
-type NetworkConfig struct {
-	Binary    string `json:"binary"`
-	Granter   string `json:"granter"`
-	Grantee   string `json:"grantee"`
-	ChainID   string `json:"chainId"`
-	Node      string `json:"node"`
-	FeePayer  string `json:"feepayer"`
-	Validator string `json:"validator"`
-}
-
-// IncomeData represents income details
-type IncomeData struct {
-	ChainID    string    `json:"chain_id"`
-	Granter    string    `json:"granter"`
-	OldBalance string    `json:"old_balance"`
-	Income     string    `json:"income"`
-	NewBalance string    `json:"new_balance"`
-	Date       time.Time `json:"date"`
-}
-
-// Configuration represents the structure of the config.json file
-type Configuration struct {
-	CronJobTime string `json:"cronJobTime"`
-	DB          struct {
-		Driver string `json:"driver"`
-		Table  string `json:"table"`
-		SQLURL string `json:"sqlUrl"`
-	} `json:"db"`
-	Networks []NetworkConfig `json:"networks"`
-}
+var config Configuration
 
 func main() {
 	configFileName := "config.json"
 
-	var config Configuration
 	if err := readJSONConfig(configFileName, &config); err != nil {
 		fmt.Println("Error reading config:", err)
 		return
@@ -68,6 +37,9 @@ func main() {
 		fmt.Println("Error creating income table:", err)
 		return
 	}
+
+	// initChains
+	initChains()
 
 	// Schedule rewards withdrawal based on the cronJobTime
 	startRewardsWithdrawalCron(db, dbTable, config, config.CronJobTime)
@@ -100,10 +72,10 @@ func startRewardsWithdrawalCron(db *sql.DB, dbTable string, config Configuration
 		networkConfigs := config.Networks
 
 		for _, network := range networkConfigs {
-			fmt.Printf("Processing network: %s\n", network.ChainID)
+			fmt.Printf("Processing network: %s\n", network.ChainName)
 
 			// Query the initial balance
-			initialBalance, err := queryBalance(network.Binary, network.Granter, network.Node)
+			initialBalance, err := queryBalance(network)
 			if err != nil {
 				fmt.Printf("Error querying initial balance: %v\n", err)
 				continue
@@ -114,7 +86,7 @@ func startRewardsWithdrawalCron(db *sql.DB, dbTable string, config Configuration
 			withdrawRewards(network.Binary, network.Granter, network.ChainID, network.Node, network.FeePayer, network.Grantee)
 
 			// Query the new balance
-			newBalance, err := queryBalance(network.Binary, network.Granter, network.Node)
+			newBalance, err := queryBalance(network)
 			if err != nil {
 				fmt.Printf("Error querying new balance: %v\n", err)
 				continue
@@ -138,54 +110,63 @@ func startRewardsWithdrawalCron(db *sql.DB, dbTable string, config Configuration
 }
 
 func initChains() {
-	// TODO: loop through all chains and update the below constats from chain config
-	// TODO: create chainclients array, store client for each chain in the array.
 	// We should use this chain-specific client while executing transactions and queries
+	networkConfigs := config.Networks
+	var granteeKeyMnemonic string
 
-	//	Fetches chain info from chain registry
-	chainInfo, err := registry.DefaultChainRegistry().GetChain(chainRegName)
-	if err != nil {
-		log.Fatalf("Failed to get chain info. Err: %v \n", err)
-	}
+	for i, network := range networkConfigs {
+		//	Fetches chain info from chain registry
+		chainInfo, err := registry.DefaultChainRegistry().GetChain(network.ChainName)
+		if err != nil {
+			log.Fatalf("Failed to get chain info. Err: %v \n", err)
+		}
 
-	//	Use Chain info to select random endpoint
-	rpc, err := chainInfo.GetRandomRPCEndpoint()
-	if err != nil {
-		log.Fatalf("Failed to get random RPC endpoint on chain %s. Err: %v \n", chainInfo.ChainID, err)
-	}
+		//	Use Chain info to select random endpoint
+		rpc, err := chainInfo.GetRandomRPCEndpoint()
+		if err != nil {
+			log.Fatalf("Failed to get random RPC endpoint on chain %s. Err: %v \n", chainInfo.ChainName, err)
+		}
 
-	// For this example, lets place the key directory in your PWD.
-	pwd, _ := os.Getwd()
-	key_dir := pwd + "/keys"
+		// For this example, lets place the key directory in your PWD.
+		pwd, _ := os.Getwd()
+		key_dir := pwd + "/keys"
 
-	// Build chain config
-	chainConfig_1 := lens.ChainClientConfig{
-		Key:     "default",
-		ChainID: chainInfo.ChainID,
-		RPCAddr: rpc,
-		// GRPCAddr       string,
-		AccountPrefix:  chainInfo.Bech32Prefix,
-		KeyringBackend: "test",
-		GasAdjustment:  1.2,
-		GasPrices:      "0.01uosmo",
-		KeyDirectory:   key_dir,
-		Debug:          true,
-		Timeout:        "20s",
-		OutputFormat:   "json",
-		SignModeStr:    "direct",
-		Modules:        lens.ModuleBasics,
-	}
+		// Define a regular expression pattern to match non-alphanumeric characters and whitespace
+		regex := regexp.MustCompile("[^a-zA-Z0-9]+")
+		// Replace all matches with an empty string
+		keyname := regex.ReplaceAllString(network.ChainName, "")
 
-	// Creates client object to pull chain info
-	chainClient, err := lens.NewChainClient(&chainConfig_1, key_dir, os.Stdin, os.Stdout)
-	if err != nil {
-		log.Fatalf("Failed to build new chain client for %s. Err: %v \n", chainInfo.ChainID, err)
-	}
+		// Build chain config
+		chainConfig_1 := lens.ChainClientConfig{
+			Key:     keyname,
+			ChainID: chainInfo.ChainID,
+			RPCAddr: rpc,
+			// GRPCAddr       string,
+			AccountPrefix:  chainInfo.Bech32Prefix,
+			KeyringBackend: "test",
+			GasAdjustment:  1.2,
+			GasPrices:      "0.01uosmo",
+			KeyDirectory:   key_dir,
+			Debug:          true,
+			Timeout:        "20s",
+			OutputFormat:   "json",
+			SignModeStr:    "direct",
+			Modules:        lens.ModuleBasics,
+		}
 
-	// TODO: check if key exists, if doesn't, restore
-	// Lets restore a key with funds and name it "source_key", this is the wallet we'll use to send tx.
-	srcWalletAddress, err := chainClient.RestoreKey("source_key", srcWalletMnemonic)
-	if err != nil {
-		log.Fatalf("Failed to restore key. Err: %v \n", err)
+		// Creates client object to pull chain info
+		chainClient, err := lens.NewChainClient(&chainConfig_1, key_dir, os.Stdin, os.Stdout)
+		if err != nil {
+			log.Fatalf("Failed to build new chain client for %s. Err: %v \n", chainInfo.ChainID, err)
+		}
+
+		// TODO: check if key exists, if doesn't, restore
+		// Lets restore a key with funds and name it "source_key", this is the wallet we'll use to send tx.
+		srcWalletAddress, err := chainClient.RestoreKey(chainInfo.ChainID, granteeKeyMnemonic)
+		if err != nil {
+			log.Fatalf("Failed to restore key. Err: %v \n", err)
+		}
+
+		ChainClients[chainInfo.chain_id] = chainClient
 	}
 }

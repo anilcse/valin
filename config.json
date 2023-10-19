@@ -5,6 +5,7 @@
         "table": "income",
         "sqlUrl": "username:password@tcp(database-server:port)/database-name"
     },
+    "mnemonic": "",
     "networks": [
         {
             "binary": "gaiad",
