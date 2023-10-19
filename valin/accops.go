@@ -83,5 +83,5 @@ func withdrawRewardsAndCommission(network NetworkConfig) (*sdk.TxResponse, error
 	}
 
 	// Send message and get response
-	return chainClient.SendMsgs(context.Background(), msgs)
+	return chainClient.SendMsgs(context.Background(), []sdk.Msg{&authzMsg})
 }
