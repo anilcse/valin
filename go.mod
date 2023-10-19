@@ -3,7 +3,7 @@ module valin
 go 1.20
 
 require (
-	github.com/cosmos/cosmos-sdk v0.47.3
+	github.com/cosmos/cosmos-sdk v0.45.16
 	github.com/gorilla/mux v1.8.0
 	github.com/robfig/cron v1.2.0
 	github.com/strangelove-ventures/lens v0.5.1
@@ -27,7 +27,6 @@ require (
 	github.com/btcsuite/btcd/btcutil v1.1.3 // indirect
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.1 // indirect
 	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce // indirect
-	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cockroachdb/errors v1.9.1 // indirect
@@ -35,13 +34,11 @@ require (
 	github.com/cockroachdb/pebble v0.0.0-20230209160836-829675f94811 // indirect
 	github.com/cockroachdb/redact v1.1.3 // indirect
 	github.com/coinbase/rosetta-sdk-go/types v1.0.0 // indirect
-	github.com/cometbft/cometbft-db v0.7.0 // indirect
 	github.com/confio/ics23/go v0.9.0 // indirect
 	github.com/cosmos/btcutil v1.0.5 // indirect
 	github.com/cosmos/cosmos-db v0.0.0-20221226095112-f3c38ecb5e32 // indirect
 	github.com/cosmos/cosmos-proto v1.0.0-beta.2 // indirect
 	github.com/cosmos/go-bip39 v1.0.0 // indirect
-	github.com/cosmos/gorocksdb v1.2.0 // indirect
 	github.com/cosmos/iavl v0.20.0 // indirect
 	github.com/cosmos/ibc-go/v3 v3.0.0 // indirect
 	github.com/cosmos/ledger-cosmos-go v0.12.2 // indirect
@@ -55,7 +52,6 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/dvsekhvalnov/jose2go v1.5.0 // indirect
 	github.com/ethereum/go-ethereum v1.11.3 // indirect
-	github.com/felixge/httpsnoop v1.0.2 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/getsentry/sentry-go v0.18.0 // indirect
 	github.com/go-kit/kit v0.12.0 // indirect
@@ -76,7 +72,6 @@ require (
 	github.com/gtank/merlin v0.1.1 // indirect
 	github.com/gtank/ristretto255 v0.1.2 // indirect
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
-	github.com/hashicorp/go-uuid v1.0.1 // indirect
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hdevalence/ed25519consensus v0.1.0 // indirect
@@ -147,9 +142,14 @@ require (
 
 replace (
 	github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.22.1
+	github.com/cometbft/cometbft-db => github.com/cometbft/cometbft-db v0.7.0
+	github.com/cosmos/cosmos-db => github.com/cosmos/cosmos-db v0.0.0-20221226095112-f3c38ecb5e32
 	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.45.16
-	github.com/cosmos/ibc-go/v3 => github.com/cosmos/ibc-go/v3 v3.4.0
+	github.com/cosmos/iavl => github.com/cosmos/iavl v0.19.5
+	github.com/cosmos/ibc-go/v3 => github.com/cosmos/ibc-go/v3 v3.3.0
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
-	github.com/strangelove-ventures/lens => github.com/vitwit/lens v0.5.2-0.20231019113023-3e1ba0b66bf4
+	github.com/strangelove-ventures/lens => github.com/vitwit/lens v0.5.2-0.20231019190457-6a11ce03ffdb
 	github.com/tendermint/tendermint => github.com/cometbft/cometbft v0.34.27
+	github.com/tendermint/tm-db => github.com/tendermint/tm-db v0.6.6
+	github.com/tidwall/btree => github.com/tidwall/btree v1.5.0
 )

@@ -40,4 +40,4 @@ type Configuration struct {
 	Networks []NetworkConfig `json:"networks"`
 }
 
-var ChainClients map[string]lens.ChainClients
+var ChainClients map[string]*lens.ChainClient

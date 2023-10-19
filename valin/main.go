@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -9,12 +10,15 @@ import (
 	"regexp"
 
 	"github.com/robfig/cron" // Import the cron library
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	lens "github.com/strangelove-ventures/lens/client"
 	registry "github.com/strangelove-ventures/lens/client/chain_registry"
 )
 
 var config Configuration
+var zapLog *zap.Logger
 
 func main() {
 	configFileName := "config.json"
@@ -114,15 +118,27 @@ func initChains() {
 	networkConfigs := config.Networks
 	var granteeKeyMnemonic string
 
-	for i, network := range networkConfigs {
+	var err error
+	config := zap.NewProductionConfig()
+	enccoderConfig := zap.NewProductionEncoderConfig()
+	zapcore.TimeEncoderOfLayout("Jan _2 15:04:05.000000000")
+	enccoderConfig.StacktraceKey = "" // to hide stacktrace info
+	config.EncoderConfig = enccoderConfig
+
+	zapLog, err = config.Build(zap.AddCallerSkip(1))
+	if err != nil {
+		panic(err)
+	}
+
+	for _, network := range networkConfigs {
 		//	Fetches chain info from chain registry
-		chainInfo, err := registry.DefaultChainRegistry().GetChain(network.ChainName)
+		chainInfo, err := registry.DefaultChainRegistry(zapLog).GetChain(context.Background(), network.ChainName)
 		if err != nil {
 			log.Fatalf("Failed to get chain info. Err: %v \n", err)
 		}
 
 		//	Use Chain info to select random endpoint
-		rpc, err := chainInfo.GetRandomRPCEndpoint()
+		rpc, err := chainInfo.GetRandomRPCEndpoint(context.Background())
 		if err != nil {
 			log.Fatalf("Failed to get random RPC endpoint on chain %s. Err: %v \n", chainInfo.ChainName, err)
 		}
@@ -155,18 +171,18 @@ func initChains() {
 		}
 
 		// Creates client object to pull chain info
-		chainClient, err := lens.NewChainClient(&chainConfig_1, key_dir, os.Stdin, os.Stdout)
+		chainClient, err := lens.NewChainClient(zapLog, &chainConfig_1, key_dir, os.Stdin, os.Stdout)
 		if err != nil {
 			log.Fatalf("Failed to build new chain client for %s. Err: %v \n", chainInfo.ChainID, err)
 		}
 
 		// TODO: check if key exists, if doesn't, restore
 		// Lets restore a key with funds and name it "source_key", this is the wallet we'll use to send tx.
-		srcWalletAddress, err := chainClient.RestoreKey(chainInfo.ChainID, granteeKeyMnemonic)
+		_, err = chainClient.RestoreKey(chainInfo.ChainID, granteeKeyMnemonic, uint32(chainInfo.Slip44))
 		if err != nil {
 			log.Fatalf("Failed to restore key. Err: %v \n", err)
 		}
 
-		ChainClients[chainInfo.chain_id] = chainClient
+		ChainClients[chainInfo.ChainID] = chainClient
 	}
 }

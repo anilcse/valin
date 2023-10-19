@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 func connectToDatabase(dbURL, dbDriver string) *sql.DB {
