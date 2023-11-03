@@ -11,6 +11,7 @@ type NetworkConfig struct {
 	ChainName string `json:"chain_name"`
 	ChainID   string `json:"chain_id"`
 	Node      string `json:"node"`
+	Fees      string `json:"fees"`
 	FeePayer  string `json:"feepayer"`
 	Validator string `json:"validator"`
 }

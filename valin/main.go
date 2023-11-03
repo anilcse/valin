@@ -117,12 +117,12 @@ func initChains() {
 		chainConfig_1 := lens.ChainClientConfig{
 			Key:     keyname,
 			ChainID: chainInfo.ChainID,
-			RPCAddr: rpc,
+			RPCAddr: network.Node,
 			// GRPCAddr       string,
 			AccountPrefix:  chainInfo.Bech32Prefix,
 			KeyringBackend: "test",
 			GasAdjustment:  1.2,
-			GasPrices:      "0.01uosmo",
+			GasPrices:      network.Fees, //"0.01uosmo",
 			KeyDirectory:   key_dir,
 			Debug:          true,
 			Timeout:        "20s",
@@ -134,7 +134,7 @@ func initChains() {
 		// Creates client object to pull chain info
 		chainClient, err := lens.NewChainClient(zapLog, &chainConfig_1, key_dir, os.Stdin, os.Stdout)
 		if err != nil {
-			log.Fatalf("Failed to build new chain client for %s. Err: %v \n", chainInfo.ChainID, err)
+			log.Fatalf("Failed to build new chain client for %s. Err: %v : rpc: %s \n", chainInfo.ChainID, err, rpc)
 		}
 
 		// TODO: check if key exists, if doesn't, restore

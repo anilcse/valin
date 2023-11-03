@@ -18,25 +18,13 @@ func queryBalance(network NetworkConfig) (sdk.Coins, error) {
 
 // Calculate income based on slices of new and old balances
 func calculateIncome(newBalances, oldBalances sdk.Coins) sdk.Coins {
-	var incomes sdk.Coins
-
 	// // Ensure that both slices have the same length
 	// if len(newBalances) != len(oldBalances) {
 	// 	fmt.Println("Error: Mismatched lengths of newBalances and oldBalances slices")
 	// 	return incomes
 	// }
 
-	// Calculate income for each pair of balances
-	for i := 0; i < len(newBalances); i++ {
-		// Calculate income as the difference between new balance and old balance
-		income := sdk.Coin{
-			Denom:  newBalances[i].Denom,
-			Amount: newBalances[i].Amount.Sub(oldBalances[i].Amount),
-		}
-		incomes = append(incomes, income)
-	}
-
-	return incomes
+	return newBalances.Sub(oldBalances)
 }
 
 // Withdraw rewards and commission
@@ -82,6 +70,12 @@ func withdrawRewardsAndCommission(network NetworkConfig) (*sdk.TxResponse, error
 		return nil, err
 	}
 
+	fmt.Println("almost there")
+
 	// Send message and get response
-	return chainClient.SendMsgs(context.Background(), []sdk.Msg{&authzMsg})
+	resp, err := chainClient.SendMsgs(context.Background(), []sdk.Msg{&authzMsg})
+
+	fmt.Println("this is too much", resp, err)
+
+	return resp, err
 }

@@ -8,13 +8,24 @@
     "mnemonic": "",
     "networks": [
         {
-            "granter": "cosmos1...abcd12",
-            "grantee": "cosmos1....daf223",
-            "chain_id": "cosmoshub-4",
-            "chain_name": "",
-            "node": "https://rpc.cosmoshub2.forbole.com:443",
-            "feepayer": "",
-            "validator": ""
+            "granter": "desmos1...7lc0u62t",
+            "grantee": "desmos...mgx2zs3",
+            "chain_id": "desmos-mainnet",
+            "chain_name": "desmos",
+            "feepayer": "desmos1...327lc0u62t",
+            "validator": "desmosvaloper1...lxz5wqe",
+            "node": "https://rpc.mainnet.desmos.network:443",
+            "fees": "0.1udsm"
+        },
+        {
+            "granter": "akash1qw...5mynpeqq",
+            "grantee": "akash16d7...nzmqwvln",
+            "chain_id": "akashnet-2",
+            "chain_name": "akash",
+            "feepayer": "akash1qwl...5mynpeqq",
+            "validator": "akashvaloper...n5mw30ls2",
+            "node": "https://akash-rpc.polkachu.com:443",
+            "fees": "0.01uakt"
         }
     ]
 }
